@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ksc98/nbacli/nba"
+	"github.com/ksc98/nbacli/scoreboard"
 	"github.com/ksc98/nbacli/ui/constants"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -28,7 +29,7 @@ func StartTea(date time.Time) {
 	}
 	nba.Sb = &scbrd
 
-	m := InitScoreboard(date)
+	m := scoreboard.InitScoreboard(date)
 	UpdateTeaView(m)
 }
 

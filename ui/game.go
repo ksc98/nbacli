@@ -1,13 +1,12 @@
 package ui
 
 import (
-	"log"
 	"strconv"
 
 	"github.com/ksc98/nbacli/nba"
+	"github.com/ksc98/nbacli/nba/scoreboard"
 	"github.com/ksc98/nbacli/ui/constants"
 	"github.com/ksc98/nbacli/ui/gameboard/scoretext"
-	// play "github.com/ksc98/nbacli/playbyplay"
 
 	"github.com/evertras/bubble-table/table"
 	// "github.com/charmbracelet/bubbles/table"
@@ -19,14 +18,14 @@ import (
 )
 
 var baseStyle = lipgloss.NewStyle().
-	BorderStyle(lipgloss.RoundedBorder()).
-	BorderForeground(constants.Accent)
+	BorderStyle(lipgloss.NormalBorder()).
+	BorderForeground(lipgloss.Color("240"))
 
 type GameModel struct {
 	table                 table.Model
 	activeGameID          string
 	activeGame            nba.BoxScoreSummary
-	previousModel         Model
+	previousModel         scoreboard.Model
 	help                  help.Model
 	width, height, margin int
 }
@@ -79,7 +78,13 @@ func (m GameModel) View() string {
 	return scoretext.RenderScoreText(m.activeGame.ArenaName, m.activeGame.GameDate, m.activeGame.HomeTeamScore, m.activeGame.VisitorTeamScore, m.activeGame.HomeTeamName, m.activeGame.VisitorTeamName) + table + helpContainer
 }
 
-func InitGameView(activeGameID string, activeGame nba.BoxScoreSummary, previousModel Model) *GameModel {
+
+func newStatsBoard(game *nba.BoxScoreRepository, gameID string) []table.Row {
+	gameStats := game.GetSingleGameStats(gameID)
+	return statsToRows(gameStats)
+}
+
+func InitGameView(activeGameID string, activeGame nba.BoxScoreSummary, previousModel scoreboard.Model) *GameModel {
 	columns := []table.Column{
 		table.NewFlexColumn("POS", "POS", 2),
 		table.NewFlexColumn("NAME", "NAME", 10),
@@ -104,23 +109,6 @@ func InitGameView(activeGameID string, activeGame nba.BoxScoreSummary, previousM
 
 	m := GameModel{t, activeGameID, activeGame, previousModel, help.New(), constants.WindowSize.Height, constants.WindowSize.Width, 3}
 	return &m
-}
-
-func InitPlayByPlayView(activeGameID string, activeGame nba.BoxScoreSummary, previousModel Model) *play.PlayByPlayModel {
-	pbp := play.New(activeGameID)
-	err := pbp.Get()
-	if err != nil {
-		log.Fatal(err)
-	}
-	// t := pbp.GetModel()
-
-	m := GameModel{t, activeGameID, activeGame, previousModel, help.New(), constants.WindowSize.Height, constants.WindowSize.Width, 3}
-	return &m
-}
-
-func newStatsBoard(game *nba.BoxScoreRepository, gameID string) []table.Row {
-	gameStats := game.GetSingleGameStats(gameID)
-	return statsToRows(gameStats)
 }
 
 func statsToRows(gameStats []nba.GameStat) []table.Row {
