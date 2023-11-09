@@ -1,10 +1,12 @@
 package ui
 
 import (
+	"log"
 	"time"
 
-	"github.com/dylantientcheu/nbacli/nba"
-	"github.com/dylantientcheu/nbacli/ui/constants"
+	"github.com/ksc98/nbacli/nba"
+	"github.com/ksc98/nbacli/playbyplay"
+	"github.com/ksc98/nbacli/ui/constants"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -43,6 +45,7 @@ func InitScoreboard(date time.Time) tea.Model {
 			constants.Keymap.Tomorrow,
 			constants.Keymap.Yesterday,
 			constants.Keymap.Back,
+			constants.Keymap.PlayByPlay,
 		}
 	}
 	return m
@@ -86,6 +89,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, constants.Keymap.Quit):
 			m.quitting = true
 			return m, tea.Quit
+		case key.Matches(msg, constants.Keymap.PlayByPlay):
+			activeGame := m.list.SelectedItem().(nba.BoxScoreSummary)
+			pbp := playbyplay.New(activeGame.GameId)
+			err := pbp.Get()
+			if err != nil {
+				log.Fatal(err)
+			}
+			playByPlayView := pbp.Model
+			return playByPlayView.Update(constants.WindowSize)
 		case key.Matches(msg, constants.Keymap.Enter):
 			m.gameview = true
 			activeGame := m.list.SelectedItem().(nba.BoxScoreSummary)

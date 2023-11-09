@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/dylantientcheu/nbacli/ui/constants"
+	"github.com/ksc98/nbacli/ui/constants"
 	"golang.org/x/term"
 )
 

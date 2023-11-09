@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/dylantientcheu/nbacli/nba"
-	"github.com/dylantientcheu/nbacli/ui/constants"
+	"github.com/ksc98/nbacli/nba"
+	"github.com/ksc98/nbacli/ui/constants"
 
 	tea "github.com/charmbracelet/bubbletea"
 )

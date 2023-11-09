@@ -6,7 +6,7 @@ package cmd
 import (
 	"time"
 
-	"github.com/dylantientcheu/nbacli/ui"
+	"github.com/ksc98/nbacli/ui"
 
 	"github.com/spf13/cobra"
 )

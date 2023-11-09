@@ -3,9 +3,9 @@ package ui
 import (
 	"strings"
 
-	"github.com/dylantientcheu/nbacli/nag/params"
-	"github.com/dylantientcheu/nbacli/nba"
-	"github.com/dylantientcheu/nbacli/ui/constants"
+	"github.com/ksc98/nbacli/nag/params"
+	"github.com/ksc98/nbacli/nba"
+	"github.com/ksc98/nbacli/ui/constants"
 
 	"github.com/evertras/bubble-table/table"
 

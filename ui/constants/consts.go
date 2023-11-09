@@ -113,11 +113,12 @@ var ErrStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#bd534b")).Render
 var AlertStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("62")).Render
 
 type keymap struct {
-	Enter     key.Binding
-	Yesterday key.Binding
-	Tomorrow  key.Binding
-	Back      key.Binding
-	Quit      key.Binding
+	Enter      key.Binding
+	Yesterday  key.Binding
+	Tomorrow   key.Binding
+	Back       key.Binding
+	Quit       key.Binding
+	PlayByPlay key.Binding
 }
 
 // Keymap reusable key mappings shared across models
@@ -127,16 +128,20 @@ var Keymap = keymap{
 		key.WithHelp("↲/enter", "select"),
 	),
 	Yesterday: key.NewBinding(
-		key.WithKeys("i", "left"),
+		key.WithKeys("i", "left", "H"),
 		key.WithHelp("←/i", "previous day"),
 	),
 	Tomorrow: key.NewBinding(
-		key.WithKeys("o", "right"),
+		key.WithKeys("o", "right", "L"),
 		key.WithHelp("→/o", "next day"),
 	),
 	Back: key.NewBinding(
 		key.WithKeys("esc"),
 		key.WithHelp("esc", "back"),
+	),
+	PlayByPlay: key.NewBinding(
+		key.WithKeys("p"),
+		key.WithHelp("p", "toggle play-by-play view"),
 	),
 	Quit: key.NewBinding(
 		key.WithKeys("ctrl+c", "q"),

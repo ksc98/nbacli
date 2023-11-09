@@ -1,10 +1,12 @@
-module github.com/dylantientcheu/nbacli
+module github.com/ksc98/nbacli
 
 go 1.18
 
 require (
 	github.com/charmbracelet/bubbletea v0.23.1
+	github.com/dylantientcheu/nbacli v0.1.2
 	github.com/nleeper/goment v1.4.4
+	github.com/sirupsen/logrus v1.9.3
 )
 
 require (
@@ -12,11 +14,8 @@ require (
 	github.com/aymanbagabas/go-osc52 v1.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/sahilm/fuzzy v0.1.0 // indirect
-	github.com/samber/lo v1.36.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/tkuchiki/go-timezone v0.2.2 // indirect
-	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 )
 
 require (

@@ -1,13 +1,16 @@
 package ui
 
 import (
+	"log"
 	"strconv"
 
-	"github.com/dylantientcheu/nbacli/nba"
-	"github.com/dylantientcheu/nbacli/ui/constants"
-	"github.com/dylantientcheu/nbacli/ui/gameboard/scoretext"
+	"github.com/ksc98/nbacli/nba"
+	"github.com/ksc98/nbacli/ui/constants"
+	"github.com/ksc98/nbacli/ui/gameboard/scoretext"
+	// play "github.com/ksc98/nbacli/playbyplay"
 
 	"github.com/evertras/bubble-table/table"
+	// "github.com/charmbracelet/bubbles/table"
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
@@ -98,6 +101,18 @@ func InitGameView(activeGameID string, activeGame nba.BoxScoreSummary, previousM
 	t := table.New(columns).WithRows(rows).
 		Focused(true).
 		Border(constants.CustomTableBorder).WithBaseStyle(baseStyle).WithPageSize(constants.WindowSize.Height / 3)
+
+	m := GameModel{t, activeGameID, activeGame, previousModel, help.New(), constants.WindowSize.Height, constants.WindowSize.Width, 3}
+	return &m
+}
+
+func InitPlayByPlayView(activeGameID string, activeGame nba.BoxScoreSummary, previousModel Model) *play.PlayByPlayModel {
+	pbp := play.New(activeGameID)
+	err := pbp.Get()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// t := pbp.GetModel()
 
 	m := GameModel{t, activeGameID, activeGame, previousModel, help.New(), constants.WindowSize.Height, constants.WindowSize.Width, 3}
 	return &m
