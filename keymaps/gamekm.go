@@ -1,4 +1,4 @@
-package ui
+package keymaps
 
 import (
 	"github.com/charmbracelet/bubbles/key"

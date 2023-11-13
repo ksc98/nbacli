@@ -1,8 +1,9 @@
-package ui
+package models
 
 import (
 	"strings"
 
+	"github.com/ksc98/nbacli/keymaps"
 	"github.com/ksc98/nbacli/nag/params"
 	"github.com/ksc98/nbacli/nba"
 	"github.com/ksc98/nbacli/ui/constants"
@@ -23,7 +24,7 @@ type StandingsModel struct {
 	width, height, margin int
 }
 
-var standingsKM = StandingKM{
+var standingsKM = keymaps.StandingKM{
 	NextTab:  key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "toggle conference (change tab)")),
 	Down:     key.NewBinding(key.WithKeys("down"), key.WithHelp("↓", "next row")),
 	Up:       key.NewBinding(key.WithKeys("up"), key.WithHelp("↑", "previous row")),

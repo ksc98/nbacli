@@ -119,6 +119,7 @@ type keymap struct {
 	Back       key.Binding
 	Quit       key.Binding
 	PlayByPlay key.Binding
+	Follow     key.Binding
 }
 
 // Keymap reusable key mappings shared across models
@@ -135,9 +136,13 @@ var Keymap = keymap{
 		key.WithKeys("o", "right", "L"),
 		key.WithHelp("→/o", "next day"),
 	),
-	Back: key.NewBinding(
-		key.WithKeys("esc"),
-		key.WithHelp("esc", "back"),
+	// Back: key.NewBinding(
+	// 	key.WithKeys("esc"),
+	// 	key.WithHelp("esc", "back"),
+	// ),
+	Follow: key.NewBinding(
+		key.WithKeys("f"),
+		key.WithHelp("f", "spawn a thread & sync the game live"),
 	),
 	PlayByPlay: key.NewBinding(
 		key.WithKeys("p"),

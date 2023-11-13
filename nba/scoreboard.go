@@ -24,9 +24,20 @@ type BoxScoreSummary struct {
 	HomeTeamScore    int
 	VisitorTeamScore int
 	ArenaName        string
+	followIcon       string
 }
 
-func (g BoxScoreSummary) Title() string { return g.HomeTeamName + " vs " + g.VisitorTeamName }
+func (g *BoxScoreSummary) FollowGame() {
+	g.followIcon = "🔴 "
+}
+
+func (g *BoxScoreSummary) UnfollowGame() {
+	g.followIcon = ""
+}
+
+func (g BoxScoreSummary) Title() string {
+	return g.followIcon + g.HomeTeamName + " vs " + g.VisitorTeamName
+}
 
 // Description the game description to display in a list
 func (g BoxScoreSummary) Description() string {

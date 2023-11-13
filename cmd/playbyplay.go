@@ -1,13 +1,11 @@
 package cmd
 
 import (
-	play "github.com/ksc98/nbacli/playbyplay"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
 var (
-	id string
+// id string
 )
 
 func init() {
@@ -27,11 +25,11 @@ var PlayByPlayCmd = &cobra.Command{
 }
 
 func playbyplay(gameID string) {
-	pbp := play.New(gameID)
-	err := pbp.Get()
-	if err != nil {
-		log.Fatalf("Error looking up game %s", gameID)
-	}
+	// pbp := play.New(gameID)
+	// err := pbp.Get()
+	// if err != nil {
+	// 	log.Fatalf("Error looking up game %s", gameID)
+	// }
 
-	pbp.UI()
+	// pbp.UI()
 }

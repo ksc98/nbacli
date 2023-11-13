@@ -1,34 +1,23 @@
-package nag
+package playbyplay
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
 	"time"
+
+	"github.com/charmbracelet/lipgloss"
 )
 
-const cdnBaseUrl = "https://cdn.nba.com/static/json/liveData/playbyplay/playbyplay"
+var _ = lipgloss.NewStyle().
+	BorderStyle(lipgloss.NormalBorder()).
+	BorderForeground(lipgloss.Color("240"))
 
-// PlayByPlayV2 wraps request to and response from playbyplayv2 endpoint.
-type PlayByPlayV2 struct {
-	*Client
-	GameID             string
-	PlayByPlayResponse *PlayByPlayResponse
-}
-
-type PlayByPlayResponse struct {
+type PlayByPlayData struct {
 	Meta any            `json:"-"`
-	Game *PlayByPlayGame `json:"game"`
+	Game PlayByPlayGame `json:"game"`
 }
 
 type PlayByPlayGame struct {
 	GameID  string             `json:"gameId"`
 	Actions []PlayByPlayAction `json:"actions"`
-}
-
-func (p *PlayByPlayGame) SetActions(actions []PlayByPlayAction) {
-	p.Actions = actions
 }
 
 type PlayByPlayAction struct {
@@ -61,32 +50,6 @@ type PlayByPlayAction struct {
 	TimeActual              string    `json:"timeActual"`
 }
 
-// NewPlayByPlayV2 creates a default PlayByPlayV2 instance.
-func NewPlayByPlayV2(id string) *PlayByPlayV2 {
-	return &PlayByPlayV2{
-		Client: NewDefaultClient(),
-		GameID: id,
-	}
-}
-
-// Get sends a GET request to playbyplayv2 endpoint.
-func (c *PlayByPlayV2) Get() error {
-	reqUrl := fmt.Sprintf("%s_%s.json", cdnBaseUrl, c.GameID)
-	resp, err := http.Get(reqUrl)
-	if err != nil {
-		return err
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var res PlayByPlayResponse
-	if err := json.Unmarshal(body, &res); err != nil {
-		return err
-	}
-
-	c.PlayByPlayResponse = &res
-	return nil
-}
+// func (i PlayByPlayAction) Title() string       { return i.title }
+// func (i PlayByPlayAction) Description() string { return i.Desc }
+// func (i PlayByPlayAction) FilterValue() string { return i.Desc }

@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/ksc98/nbacli/models"
 	"github.com/ksc98/nbacli/nba"
-	"github.com/ksc98/nbacli/scoreboard"
 	"github.com/ksc98/nbacli/ui/constants"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -29,12 +29,12 @@ func StartTea(date time.Time) {
 	}
 	nba.Sb = &scbrd
 
-	m := scoreboard.InitScoreboard(date)
+	m := models.InitScoreboard(date)
 	UpdateTeaView(m)
 }
 
 func StartStanding() {
-	m := InitStandingsView()
+	m := models.InitStandingsView()
 	UpdateTeaView(m)
 }
 
