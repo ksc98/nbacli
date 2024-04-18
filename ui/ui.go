@@ -29,7 +29,7 @@ func StartTea(date time.Time) {
 	}
 	nba.Sb = &scbrd
 
-	m := models.InitScoreboard(date)
+	m := models.NewScoreboard(date)
 	UpdateTeaView(m)
 }
 

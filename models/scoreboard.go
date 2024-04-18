@@ -36,7 +36,7 @@ type Model struct {
 }
 
 func (m Model) Init() tea.Cmd {
-	return nil
+	return m.InitScoreboard
 }
 
 // Update handle IO and commands
@@ -48,6 +48,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		constants.WindowSize = msg
 		top, right, bottom, left := constants.DocStyle.GetMargin()
 		m.List.SetSize(msg.Width-left-right, msg.Height-top-bottom-1)
+
+	case tea.Model:
+		m.List = createDelegatedScoreboardList(m.CurrentDate)
+		delay := time.Duration(5) * time.Second
+		cmds = append(cmds, func() tea.Msg {
+			time.Sleep(delay)
+			return m
+		})
+		return m, tea.Batch(cmds...)
 
 	case tea.KeyMsg:
 		switch {
@@ -87,11 +96,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			activeGame := m.List.SelectedItem().(nba.BoxScoreSummary)
 			pbpView, err := InitPlayByPlayView(activeGame.GameId, activeGame, m)
 			pbpView.RecalculateTable()
-			// cmds = append(cmds, pbpView.Init())
-			// m, _ := pbpView.Update(constants.WindowSize)
 			if err == nil {
 				return pbpView, pbpView.Init()
-				return pbpView.Update(constants.WindowSize)
 			}
 		case key.Matches(msg, constants.Keymap.Enter):
 			m.Gameview = true
@@ -262,20 +268,20 @@ type SelectMsg struct {
 	ActiveScorebardID uint
 }
 
-func InitScoreboard(date time.Time) tea.Model {
+func NewScoreboard(date time.Time) tea.Model {
+	return createScoreboardModel(date)
+}
+
+func createDelegatedScoreboardList(date time.Time) list.Model {
 	items := newScoreboardList(nba.Sb, date)
 	defaultDelegate := list.NewDefaultDelegate()
-	m := Model{
-		Mode:        nav,
-		CurrentDate: date,
-		List:        list.New(items, defaultDelegate, 1, 1),
-	}
+	gameList := list.New(items, defaultDelegate, 1, 1)
 	if constants.WindowSize.Height != 0 {
 		top, right, bottom, left := constants.DocStyle.GetMargin()
-		m.List.SetSize(constants.WindowSize.Width-left-right, constants.WindowSize.Height-top-bottom-1)
+		gameList.SetSize(constants.WindowSize.Width-left-right, constants.WindowSize.Height-top-bottom-1)
 	}
-	m.List.Title = "NBA Games - " + m.CurrentDate.Format("Monday, 2 Jan 06")
-	m.List.AdditionalShortHelpKeys = func() []key.Binding {
+	gameList.Title = "NBA Games - " + date.Format("Monday, 2 Jan 06")
+	gameList.AdditionalShortHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			constants.Keymap.Tomorrow,
 			constants.Keymap.Yesterday,
@@ -283,7 +289,20 @@ func InitScoreboard(date time.Time) tea.Model {
 			constants.Keymap.PlayByPlay,
 		}
 	}
+	return gameList
+}
+
+func createScoreboardModel(date time.Time) tea.Model {
+	m := Model{
+		Mode:        nav,
+		CurrentDate: date,
+		List:        createDelegatedScoreboardList(date),
+	}
 	return m
+}
+
+func (m Model) InitScoreboard() tea.Msg {
+	return createScoreboardModel(m.CurrentDate)
 }
 
 func newScoreboardList(scbrd *nba.ScoreboardRepository, date time.Time) []list.Item {

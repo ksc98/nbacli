@@ -5,6 +5,8 @@ go 1.21
 require (
 	github.com/charmbracelet/bubbletea v0.23.1
 	github.com/dylantientcheu/nbacli v0.1.2
+	github.com/lithammer/fuzzysearch v1.1.8
+	github.com/mitranim/repr v0.1.5
 	github.com/nleeper/goment v1.4.4
 )
 
@@ -35,6 +37,6 @@ require (
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/spf13/cobra v1.6.1
 	golang.org/x/sys v0.14.0 // indirect
-	golang.org/x/term v0.2.0
-	golang.org/x/text v0.4.0 // indirect
+	golang.org/x/term v0.5.0
+	golang.org/x/text v0.9.0 // indirect
 )

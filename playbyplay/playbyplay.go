@@ -119,23 +119,8 @@ func (m PlayByPlayModel) View() string {
 
 	doc.WriteString(gameBoard)
 
-	// message := "Enter a search:"
-	// if IN_SEARCH {
-	// 	message = "Searching for: " + m.filterTextInput.Value()
-	// }
-	// gb2 := lipgloss.Place(0, 0,
-	// 	lipgloss.Center, lipgloss.Center,
-	// 	dialogBoxStyle.Render(m.Table.View()),
-	// 	lipgloss.WithWhitespaceChars("░"),
-	// 	lipgloss.WithWhitespaceForeground(lipgloss.AdaptiveColor{Light: "#D9DCCF", Dark: "#212121"}),
-	// )
-	// doc.WriteString(gb2)
-
 	view := lipgloss.JoinVertical(
 		lipgloss.Center,
-		// base.StyleSubtle.Render("Press q or ctrl+c to quit"),
-		// message,
-		// m.filterTextInput.View(),
 		doc.String(),
 		m.Table.View(),
 	) + "\n"
@@ -151,7 +136,11 @@ var counter = 1
 
 func (m PlayByPlayModel) refreshPlayByPlayRows() tea.Msg {
 	actions := GetPlayByPlayActions(m.gameID)
+	// if m.marker == len(actions) {
+	// 	return "hello"
+	// }
 	m.actions = actions
+
 	return m.actions
 }
 
@@ -196,9 +185,9 @@ func (p *PlayByPlayModel) RecalculateTable() {
 
 func (m PlayByPlayModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
-		cmd         tea.Cmd
-		cmds        []tea.Cmd
-		styleGreen  = lipgloss.NewStyle().Foreground(lipgloss.Color("#0f0"))
+		cmd        tea.Cmd
+		cmds       []tea.Cmd
+		styleGreen = lipgloss.NewStyle().Foreground(lipgloss.Color("#0f0"))
 		// styleYellow = lipgloss.NewStyle().Foreground(lipgloss.Color("#f00"))
 	)
 
@@ -269,25 +258,20 @@ func (m PlayByPlayModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.gameID != m.gameID {
 			return m, nil
 		}
-		actions := msg.actions
-		rows := generateRowsFromActions(actions.([]nag.PlayByPlayAction))
-		// if len(rows) == m.marker {
-		// 	return m, nil
-		// }
+		actions := msg.actions.([]nag.PlayByPlayAction)
+		rows := generateRowsFromActions(actions)
+
 		for i := m.marker; i < len(rows); i++ {
 			rows[i] = rows[i].WithStyle(styleGreen)
 		}
-		if m.secondMarker != -1 {
-			// for i := m.secondMarker; i < m.marker; i++ {
-			// 	rows[i] = rows[i].WithStyle(styleYellow)
-			// }
-			m.secondMarker = m.marker
-		}
 
 		m.secondMarker = m.marker
-		m.marker = len(rows)
 		slices.Reverse(rows)
-		m.Table = m.Table.WithRows(rows)
+		if len(rows) != m.marker {
+			// update table if there are new rows
+			m.Table = m.Table.WithRows(rows)
+		}
+		m.marker = len(rows)
 		delay := time.Duration(m.updateIntervalSecs) * time.Second
 		cmds = append(cmds, func() tea.Msg {
 			time.Sleep(delay)

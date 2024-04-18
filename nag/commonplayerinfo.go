@@ -29,6 +29,7 @@ func NewCommonPlayerInfo(id string) *CommonPlayerInfo {
 // Get sends a GET request to commonplayerinfo endpoint.
 func (c *CommonPlayerInfo) Get() error {
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/commonplayerinfo", c.BaseURL.String()), nil)
+	fmt.Println(fmt.Sprintf("%s/commonplayerinfo", c.BaseURL.String()))
 	if err != nil {
 		return err
 	}
@@ -39,6 +40,7 @@ func (c *CommonPlayerInfo) Get() error {
 	q.Add("PlayerID", c.PlayerID)
 	q.Add("LeagueID", c.LeagueID)
 	req.URL.RawQuery = q.Encode()
+	println(req.URL.String())
 
 	b, err := c.Do(req)
 	if err != nil {
