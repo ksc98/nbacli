@@ -18,7 +18,7 @@ type PlayByPlayV2 struct {
 }
 
 type PlayByPlayResponse struct {
-	Meta any            `json:"-"`
+	Meta any             `json:"-"`
 	Game *PlayByPlayGame `json:"game"`
 }
 

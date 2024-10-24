@@ -7,18 +7,17 @@ import (
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/evertras/bubble-table/table"
-	"github.com/ksc98/nbacli/helpers"
 	"github.com/ksc98/nbacli/nba"
 	play "github.com/ksc98/nbacli/playbyplay"
+	"github.com/ksc98/nbacli/ui/base"
 	"github.com/ksc98/nbacli/ui/constants"
 )
 
-var (
-	TOGGLE_MAP = map[string]bool{}
-)
+var TOGGLE_MAP = map[string]bool{}
 
 type mode int
 
@@ -27,36 +26,53 @@ const (
 	edit
 )
 
+type sessionState int
+
+const (
+	scoreboardView sessionState = iota
+	pbpView
+)
+
 type Model struct {
 	Mode        mode
 	List        list.Model
 	CurrentDate time.Time
 	Quitting    bool
 	Gameview    bool
+	state       sessionState
+	games       map[string]*play.PlayByPlayModel
+	spinners    map[int]*spinner.Model
 }
 
 func (m Model) Init() tea.Cmd {
-	return m.InitScoreboard
+	return nil
+}
+
+func (m Model) ScoreboardInitFilter() {
 }
 
 // Update handle IO and commands
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
+
 	switch msg := msg.(type) {
+
 	case tea.WindowSizeMsg:
 		constants.WindowSize = msg
 		top, right, bottom, left := constants.DocStyle.GetMargin()
 		m.List.SetSize(msg.Width-left-right, msg.Height-top-bottom-1)
 
-	case tea.Model:
-		m.List = createDelegatedScoreboardList(m.CurrentDate)
-		delay := time.Duration(5) * time.Second
-		cmds = append(cmds, func() tea.Msg {
-			time.Sleep(delay)
-			return m
-		})
-		return m, tea.Batch(cmds...)
+	// case spinner.TickMsg:
+	// 	fmt.Printf("#%v\n", msg)
+	// 	// s, cmd := m.spinners[msg.ID].Update(msg)
+	// 	// m.spinners[msg.ID] = &s
+	// 	for _, game := range m.games {
+	// 		s, cmd := game.Spinner().Update(msg)
+	// 		game.SetSpinner(s)
+	// 		cmds = append(cmds, cmd)
+	// 	}
+	// 	return m, tea.Batch(cmds...)
 
 	case tea.KeyMsg:
 		switch {
@@ -84,21 +100,27 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, constants.Keymap.Follow):
 			activeGame := m.List.SelectedItem().(nba.BoxScoreSummary)
 
-			if !helpers.Toggle("follow" + activeGame.GameId) {
-				activeGame.FollowGame()
-			} else {
-				activeGame.UnfollowGame()
-			}
-			m.List.SetItem(m.List.Cursor(), activeGame)
+			activeGame.FollowGame()
+			// if helpers.Toggle("follow" + activeGame.GameId) {
+			// } else {
+			// 	activeGame.UnfollowGame()
+			// }
+			// cmds = append(cmds, m.List.SetItem(m.List.Cursor(), activeGame))
+			m.List.SetItem(m.List.Cursor(), activeGame.FollowGame())
 			return m, nil
 
 		case key.Matches(msg, constants.Keymap.PlayByPlay):
 			activeGame := m.List.SelectedItem().(nba.BoxScoreSummary)
-			pbpView, err := InitPlayByPlayView(activeGame.GameId, activeGame, m)
-			pbpView.RecalculateTable()
-			if err == nil {
-				return pbpView, pbpView.Init()
+			id := activeGame.GameId
+			pbpView, cmd := m.InitPlayByPlayView(id, activeGame)
+			if pbpView == nil {
+				return m, nil
 			}
+			cmds = append(cmds, cmd)
+			pbpView.RecalculateTable()
+			pbpView.SetPreviousModel(m)
+			return pbpView, tea.Batch(cmds...)
+
 		case key.Matches(msg, constants.Keymap.Enter):
 			m.Gameview = true
 			activeGame := m.List.SelectedItem().(nba.BoxScoreSummary)
@@ -106,12 +128,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return gameView.Update(constants.WindowSize)
 
 		case msg.String() == "esc":
-
-		default:
-			m.List, cmd = m.List.Update(msg)
 		}
-		cmds = append(cmds, cmd)
 	}
+
+	m.List, cmd = m.List.Update(msg)
+	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 
@@ -124,13 +145,43 @@ func (m Model) View() string {
 	return constants.DocStyle.Render(m.List.View() + "\n")
 }
 
-func InitPlayByPlayView(activeGameID string, activeGame nba.BoxScoreSummary, previousModel Model) (*play.PlayByPlayModel, error) {
-	model := play.GetPlayByPlayModel(activeGameID)
-	model.SetPreviousModel(previousModel)
-	return model, nil
+func (m *Model) InitPlayByPlayView(activeGameID string, activeGame nba.BoxScoreSummary) (*play.PlayByPlayModel, tea.Cmd) {
+	var pbpView *play.PlayByPlayModel
+	var ok bool
+	var cmd tea.Cmd
+
+	if pbpView, ok = m.games[activeGameID]; !ok {
+
+		s := spinner.New()
+		s.Spinner = spinner.Meter
+		s.Spinner.Frames = []string{
+			"▰▱▱▱▱",
+			"▰▰▱▱▱",
+			"▰▰▰▱▱",
+			"▰▰▰▰▱",
+			"▰▰▰▰▰",
+		}
+		s.Spinner.FPS = 1 * time.Second
+
+		m.spinners[s.ID()] = &s
+
+		pbpView = play.GetPlayByPlayModel(activeGameID)
+		pbpView.SetSpinner(s)
+		m.games[activeGameID] = pbpView
+		// s := pbpView.Spinner()
+		// m.spinners[pbpView.Spinner().ID()] = &s
+	}
+
+	if len(pbpView.Rows) == 0 {
+		return nil, nil
+	}
+
+	cmd = pbpView.Init()
+
+	return pbpView, cmd
 }
 
-func InitGameView(activeGameID string, activeGame nba.BoxScoreSummary, previousModel Model) *GameModel {
+func InitGameView(activeGameID string, activeGame nba.BoxScoreSummary, previousModel base.BaseModel) *GameModel {
 	columns := []table.Column{
 		table.NewFlexColumn("POS", "POS", 2),
 		table.NewFlexColumn("NAME", "NAME", 10),
@@ -280,23 +331,26 @@ func createDelegatedScoreboardList(date time.Time) list.Model {
 		top, right, bottom, left := constants.DocStyle.GetMargin()
 		gameList.SetSize(constants.WindowSize.Width-left-right, constants.WindowSize.Height-top-bottom-1)
 	}
-	gameList.Title = "NBA Games - " + date.Format("Monday, 2 Jan 06")
+	gameList.Title = "NBA Games - " + date.Format("Monday, 2 Jan 2006")
 	gameList.AdditionalShortHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			constants.Keymap.Tomorrow,
 			constants.Keymap.Yesterday,
 			constants.Keymap.Back,
 			constants.Keymap.PlayByPlay,
+			constants.Keymap.Follow,
 		}
 	}
 	return gameList
 }
 
 func createScoreboardModel(date time.Time) tea.Model {
-	m := Model{
+	m := &Model{
 		Mode:        nav,
 		CurrentDate: date,
 		List:        createDelegatedScoreboardList(date),
+		games:       map[string]*play.PlayByPlayModel{},
+		spinners:    map[int]*spinner.Model{},
 	}
 	return m
 }

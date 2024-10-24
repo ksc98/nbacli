@@ -27,12 +27,14 @@ type BoxScoreSummary struct {
 	followIcon       string
 }
 
-func (g *BoxScoreSummary) FollowGame() {
+func (g *BoxScoreSummary) FollowGame() *BoxScoreSummary {
 	g.followIcon = "🔴 "
+	return g
 }
 
-func (g *BoxScoreSummary) UnfollowGame() {
+func (g *BoxScoreSummary) UnfollowGame() *BoxScoreSummary {
 	g.followIcon = ""
+	return g
 }
 
 func (g BoxScoreSummary) Title() string {
@@ -41,8 +43,8 @@ func (g BoxScoreSummary) Title() string {
 
 // Description the game description to display in a list
 func (g BoxScoreSummary) Description() string {
-	var desc = ""
-	var status = strings.TrimSpace(g.GameStatus)
+	desc := ""
+	status := strings.TrimSpace(g.GameStatus)
 	if status[len(status)-2:] == "ET" {
 		// upcoming game
 		gameTime := GetDateTimeFromESTInUTC(status, g.GameDate)
@@ -68,8 +70,7 @@ func (g BoxScoreSummary) Description() string {
 // FilterValue choose what field to use for filtering in a Bubbletea list component
 func (g BoxScoreSummary) FilterValue() string { return g.HomeTeamName + " vs " + g.VisitorTeamName }
 
-type ScoreboardRepository struct {
-}
+type ScoreboardRepository struct{}
 
 func (g *ScoreboardRepository) GetGames(date time.Time) []BoxScoreSummary {
 	sbv2 := nag.NewScoreBoardV2(date)
@@ -101,9 +102,11 @@ func (g *ScoreboardRepository) GetGames(date time.Time) []BoxScoreSummary {
 		hteam, herr := GetTeamByIdOrTricode(v.HomeTeamID, "")
 		ateam, aerr := GetTeamByIdOrTricode(v.VisitorTeamID, "")
 		if herr != nil {
+			continue
 			panic(herr)
 		}
 		if aerr != nil {
+			continue
 			panic(aerr)
 		}
 

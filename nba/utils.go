@@ -28,9 +28,7 @@ type Team struct {
 var f embed.FS
 
 func GetTeamByIdOrTricode(id int64, tricode string) (Team, error) {
-
 	jsonFile, err := f.Open("teams.json")
-
 	if err != nil {
 		panic(err)
 	}

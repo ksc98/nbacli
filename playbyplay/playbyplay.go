@@ -10,6 +10,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -87,6 +88,7 @@ type PlayByPlayModel struct {
 	toggle                int
 	marker                int
 	secondMarker          int
+	spinner               spinner.Model
 }
 
 var _ = keymaps.GameKM{
@@ -95,20 +97,29 @@ var _ = keymaps.GameKM{
 	Previous: key.NewBinding(key.WithKeys("esc", "q"), key.WithHelp("q/esc", "back to games list")),
 }
 
-var (
-	dialogBoxStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(constants.Accent).
-		Padding(0, 1).
-		BorderTop(true).
-		BorderLeft(true).
-		BorderRight(true).
-		BorderBottom(true)
-)
+var dialogBoxStyle = lipgloss.NewStyle().
+	Border(lipgloss.RoundedBorder()).
+	BorderForeground(constants.Accent).
+	Padding(0, 1).
+	BorderTop(true).
+	BorderLeft(true).
+	BorderRight(true).
+	BorderBottom(true)
 
 func (m PlayByPlayModel) View() string {
 	doc := strings.Builder{}
+	// prompt := lipgloss.NewStyle().Width(40).Align(lipgloss.Left).Render(m.filterTextInput.View())
+
+	// s := spinner.New(spinner.CharSets[9], 100*time.Millisecond)
+	// s.Color("fgCyan")
+
+	spinnerStr := lipgloss.NewStyle().Width(10).Align(lipgloss.Left).Render(m.spinner.View())
+
 	prompt := lipgloss.NewStyle().Width(40).Align(lipgloss.Left).Render(m.filterTextInput.View())
+	// prompt := lipgloss.NewStyle().Width(40).Align(lipgloss.Left).Render(m.spinner.View())
+
+	prompt = lipgloss.JoinHorizontal(lipgloss.Left, spinnerStr, prompt)
+
 	ui := lipgloss.JoinVertical(lipgloss.Left, prompt)
 	gameBoard := lipgloss.Place(0, 0,
 		lipgloss.Center, lipgloss.Center,
@@ -128,13 +139,32 @@ func (m PlayByPlayModel) View() string {
 	return view
 }
 
-func newPlayByPlayModel() *PlayByPlayModel {
-	return &PlayByPlayModel{}
-}
+var (
+	// Available spinners
+	spinners = []spinner.Spinner{
+		spinner.Line,
+		spinner.Dot,
+		spinner.MiniDot,
+		spinner.Jump,
+		spinner.Pulse,
+		spinner.Points,
+		spinner.Globe,
+		spinner.Moon,
+		spinner.Monkey,
+		spinner.Meter,
+	}
+
+	textStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render
+	spinnerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("69"))
+)
 
 var counter = 1
 
-func (m PlayByPlayModel) refreshPlayByPlayRows() tea.Msg {
+func (m *PlayByPlayModel) Spinner() spinner.Model {
+	return m.spinner
+}
+
+func (m *PlayByPlayModel) refreshPlayByPlayRows() tea.Msg {
 	actions := GetPlayByPlayActions(m.gameID)
 	// if m.marker == len(actions) {
 	// 	return "hello"
@@ -144,15 +174,28 @@ func (m PlayByPlayModel) refreshPlayByPlayRows() tea.Msg {
 	return m.actions
 }
 
-func (m PlayByPlayModel) initRefresh() tea.Msg {
+func (m *PlayByPlayModel) SetSpinner(spinner spinner.Model) {
+	m.spinner = spinner
+}
+
+func (m *PlayByPlayModel) initRefresh() tea.Msg {
 	return RefreshActionsEvent{gameID: m.gameID, actions: m.refreshPlayByPlayRows()}
 }
 
+// func (m PlayByPlayModel) StartSpinner() tea.Cmd {
+// 	return tea.Batch(
+// 		m.spinner.Tick,
+// 	)
+// }
+
 func (m PlayByPlayModel) Init() tea.Cmd {
-	return m.initRefresh
+	return tea.Batch(
+		m.spinner.Tick,
+		m.initRefresh,
+	)
 }
 
-func (m PlayByPlayModel) Reverse() tea.Cmd {
+func (m *PlayByPlayModel) Reverse() tea.Cmd {
 	return nil
 }
 
@@ -183,15 +226,15 @@ func (p *PlayByPlayModel) RecalculateTable() {
 		WithMinimumHeight(p.calculateHeight())
 }
 
-func (m PlayByPlayModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *PlayByPlayModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
 		cmd        tea.Cmd
 		cmds       []tea.Cmd
 		styleGreen = lipgloss.NewStyle().Foreground(lipgloss.Color("#0f0"))
-		// styleYellow = lipgloss.NewStyle().Foreground(lipgloss.Color("#f00"))
 	)
 
-	m.RecalculateTable()
+	// m.RecalculateTable()
+
 	m.Table, cmd = m.Table.Update(msg)
 	cmds = append(cmds, cmd)
 
@@ -224,7 +267,14 @@ func (m PlayByPlayModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.filterTextInput.Reset()
 				m.filterTextInput.Blur()
 				IN_SEARCH = false
+			} else {
+				// cmds = append(cmds, func() tea.Msg {
+				// 	return m.spinner.Tick
+				// })
+				return m.PrevModel, tea.Batch(cmds...)
+				// cmds = append(cmds, m.spinner.Tick)
 			}
+			return m.PrevModel, tea.Batch(cmds...)
 		case "q":
 			return m.PrevModel, tea.Batch(cmds...)
 		case "ctrl+c":
@@ -246,33 +296,60 @@ func (m PlayByPlayModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.filterTextInput.Focus()
 			return m, tea.Batch(cmds...)
 		case "enter":
-		default:
+			return m, tea.Batch(cmds...)
 		}
+		return m, tea.Batch(cmds...)
 
 	case tea.WindowSizeMsg:
 		m.Width = msg.Width
 		m.Height = msg.Height
 		m.RecalculateTable()
 
+	case spinner.TickMsg:
+		m.spinner, cmd = m.spinner.Update(msg)
+		cmds = append(cmds, cmd)
+		return m, tea.Batch(cmds...)
+
 	case RefreshActionsEvent:
+		// log.Info("refreshing")
 		if msg.gameID != m.gameID {
 			return m, nil
 		}
+
 		actions := msg.actions.([]nag.PlayByPlayAction)
 		rows := generateRowsFromActions(actions)
 
+		if m.marker > len(rows) {
+			m.marker = len(rows)
+		}
+
+		for inactive := 0; inactive < len(rows); inactive++ {
+			rows[inactive] = rows[inactive].WithStyle(lipgloss.NewStyle().Faint(true).Foreground(lipgloss.Color("241")))
+			// rows[inactive] = rows[inactive].WithStyle(styleGreen)
+		}
+
+		styleOrange := lipgloss.NewStyle().Faint(true).Foreground(lipgloss.Color("202"))
 		for i := m.marker; i < len(rows); i++ {
 			rows[i] = rows[i].WithStyle(styleGreen)
 		}
 
-		m.secondMarker = m.marker
+		if m.secondMarker > -1 {
+			for j := m.secondMarker; j < m.marker; j++ {
+				rows[j] = rows[j].WithStyle(styleOrange)
+			}
+		}
+
 		slices.Reverse(rows)
 		if len(rows) != m.marker {
 			// update table if there are new rows
 			m.Table = m.Table.WithRows(rows)
+			m.secondMarker = m.marker
 		}
+
 		m.marker = len(rows)
+
 		delay := time.Duration(m.updateIntervalSecs) * time.Second
+
 		cmds = append(cmds, func() tea.Msg {
 			time.Sleep(delay)
 			return RefreshActionsEvent{
@@ -280,8 +357,11 @@ func (m PlayByPlayModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				actions: m.refreshPlayByPlayRows(),
 			}
 		})
+
+		// cmds = append(cmds, m.spinner.Tick)
 		return m, tea.Batch(cmds...)
 	}
+
 	return m, tea.Batch(cmds...)
 }
 
@@ -292,6 +372,9 @@ type RefreshActionsEvent struct {
 
 func GetPlayByPlayActions(id string) []nag.PlayByPlayAction {
 	e := engine.GetEngine(id)
+	if e == nil {
+		return []nag.PlayByPlayAction{}
+	}
 	pbp := e.GetPlayByPlay()
 	return pbp.Game.Actions
 }
@@ -333,9 +416,10 @@ func generateRowsFromActions(actions []nag.PlayByPlayAction) []table.Row {
 
 // populate data
 func GetPlayByPlayModel(id string) *PlayByPlayModel {
-
 	actions := GetPlayByPlayActions(id)
+
 	// populate rows
+
 	rows := generateRowsFromActions(actions)
 	slices.Reverse(rows)
 
@@ -343,6 +427,17 @@ func GetPlayByPlayModel(id string) *PlayByPlayModel {
 
 	ti := textinput.New()
 	ti.Placeholder = `press "/" to start searching`
+
+	s := spinner.New()
+	s.Spinner = spinner.Meter
+	s.Spinner.Frames = []string{
+		"▰▱▱▱▱",
+		"▰▰▱▱▱",
+		"▰▰▰▱▱",
+		"▰▰▰▰▱",
+		"▰▰▰▰▰",
+	}
+	s.Spinner.FPS = 1 * time.Second
 
 	model := &PlayByPlayModel{
 		Table:              t,
@@ -358,6 +453,7 @@ func GetPlayByPlayModel(id string) *PlayByPlayModel {
 		actions:            actions,
 		marker:             len(rows),
 		secondMarker:       -1,
+		spinner:            s,
 	}
 
 	model.Table = model.Table.WithPageSize(constants.WindowSize.Height - 10)

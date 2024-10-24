@@ -11,10 +11,9 @@ import (
 // CommonPlayerInfo wraps request to and response from commonplayerinfo endpoint.
 type CommonPlayerInfo struct {
 	*Client
+	Response *Response
 	PlayerID string
 	LeagueID string
-
-	Response *Response
 }
 
 // NewCommonPlayerInfo creates a default CommonPlayerInfo instance.
@@ -29,7 +28,7 @@ func NewCommonPlayerInfo(id string) *CommonPlayerInfo {
 // Get sends a GET request to commonplayerinfo endpoint.
 func (c *CommonPlayerInfo) Get() error {
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/commonplayerinfo", c.BaseURL.String()), nil)
-	fmt.Println(fmt.Sprintf("%s/commonplayerinfo", c.BaseURL.String()))
+	// fmt.Println(fmt.Sprintf("%s/commonplayerinfo", c.BaseURL.String()))
 	if err != nil {
 		return err
 	}

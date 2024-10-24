@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -8,20 +9,17 @@ import (
 	"github.com/ksc98/nbacli/nba"
 )
 
-var (
-	games sync.Map
-)
+var games sync.Map
 
 const (
 	DEFAULT_TICKER_INTERVAL = 5
 )
 
 type GameEngine struct {
-	gameid       string
-	tickInterval int
-	counter      int
 	playbyplay   *nag.PlayByPlayResponse
 	boxscore     *nba.BoxScoreSummary
+	gameid       string
+	tickInterval int
 }
 
 type NBAEngine struct {
@@ -31,20 +29,22 @@ type NBAEngine struct {
 func NewGameEngine(id string) *GameEngine {
 	return &GameEngine{
 		gameid:       id,
-		counter:      1,
 		tickInterval: DEFAULT_TICKER_INTERVAL,
 		playbyplay:   &nag.PlayByPlayResponse{},
 		boxscore:     &nba.BoxScoreSummary{},
 	}
 }
 
-func (e *GameEngine) InitPlayByPlayTracker() nag.PlayByPlayResponse {
+func (e *GameEngine) InitPlayByPlayTracker() (nag.PlayByPlayResponse, error) {
 	pbp := nag.NewPlayByPlayV2(e.gameid)
 	pbp.Get()
+	if pbp.PlayByPlayResponse == nil {
+		return nag.PlayByPlayResponse{}, fmt.Errorf("no play by play data found!")
+	}
 	e.playbyplay = pbp.PlayByPlayResponse
 	go e.startPlayByPlayTicker()
 	persist(e)
-	return *pbp.PlayByPlayResponse
+	return *pbp.PlayByPlayResponse, nil
 }
 
 func (e *GameEngine) startPlayByPlayTicker() {
@@ -78,7 +78,10 @@ func GetEngine(id string) *GameEngine {
 	}
 
 	e := NewGameEngine(id)
-	e.InitPlayByPlayTracker()
+	if _, err := e.InitPlayByPlayTracker(); err != nil {
+		return nil
+	}
+
 	games.Store(id, e)
 	return e
 }
